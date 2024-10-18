@@ -1,0 +1,71 @@
+.save-button ion-button {
+  --background: #3a86ff;
+  --background-hover: #2c7af7;
+  --background-activated: #2c7af7;
+  --background-focused: #2c7af7;
+
+  --color: white;
+
+  --border-radius: 25px;
+  --border-color: #000;
+  --border-style: solid;
+  --border-width: 1px;
+
+  --box-shadow: 2px 2px 8px 0 rgba(255, 255, 255, 0.25);
+
+  --ripple-color: #000;
+
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+}
+
+.centered-card {
+  margin: auto;
+  margin-top: 30px;
+  width: 90%;
+  max-width: 500px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  background-color: #2a2a2a;
+  color: #fff;
+}
+
+.centered-card ion-card-title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.centered-card ion-label {
+  color: #bbb;
+  font-size: 1.2rem;
+  margin-top: 20px;
+}
+
+.centered-card ion-input,
+.centered-card ion-datetime {
+  background-color: #444;
+  border-radius: 5px;
+  color: #fff;
+
+  padding: 10px;
+  margin: 5px;
+  --padding-start: 20px;
+}
+
+.centered-card ion-button {
+  margin-top: 20px;
+  display: block;
+  width: 100%;
+  --background: #3880ff;
+}
+
+.centered-card ion-button:hover {
+  --background: #3171e0;
+}
+
+.invalid-time {
+  color: red;
+  text-align: center;
+  margin-top: 5px;
+}

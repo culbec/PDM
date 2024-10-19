@@ -32,23 +32,19 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 import GameList from './game/GameList';
-import { GameProvider } from './game/GameProvider';
 import GameDetail from './game/GameDetail';
 
 setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <GameProvider>
-      <IonReactRouter>
-        <IonRouterOutlet>
-          <Route exact path="/gamestop/games" component={GameList} />
-          <Route exact path="/gamestop/games/:id" component={GameDetail} />
-          <Route exact path="/gamestop/games/new" component={GameDetail} />
-          <Route exact path="/" render={() => <Redirect to="/gamestop/games" />} />
-        </IonRouterOutlet>
-      </IonReactRouter>
-    </GameProvider>
+    <IonReactRouter>
+      <IonRouterOutlet>
+        <Route exact path="/gamestop/games" component={GameList} />
+        <Route exact path="/gamestop/game/" component={GameDetail} />
+        <Route component={GameList} />
+      </IonRouterOutlet>
+    </IonReactRouter>
   </IonApp>
 );
 

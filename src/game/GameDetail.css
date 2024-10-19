@@ -69,3 +69,15 @@
   text-align: center;
   margin-top: 5px;
 }
+
+ion-select {
+  background-color: #444;
+  border-radius: 5px;
+  color: #fff;
+  padding: 10px;
+  margin: 5px;
+}
+
+ion-select label {
+  color: white;
+}

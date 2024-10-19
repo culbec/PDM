@@ -1,30 +1,22 @@
-import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonButton, IonIcon, IonCardSubtitle, IonLabel, IonToolbar } from "@ionic/react";
+import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonCardSubtitle, IonLabel, IonToolbar } from "@ionic/react";
 import { GameProps } from "./GameProps";
 import { gameController } from "ionicons/icons";
 import "./Game.css";
 import { useHistory } from "react-router";
-import { useState } from "react";
+import { memo } from "react";
 
-interface GameComponentProps extends GameProps {
-    rentGame: () => void;
-}
-
-const Game: React.FC<GameComponentProps> = (props) => {
+const Game: React.FC<GameProps> = memo((props) => {
     const history = useHistory();
-    const [isButtonHovered, setIsButtonHovered] = useState(false);
 
     const handleCardClick = () => {
-        history.push(`/gamestop/games/${props._id}`);
-    }
-
+        history.push({
+            pathname: '/gamestop/game/',
+            state: { game: props }
+        });
+    };
 
     return (
-        <IonCard className="game-card" onClick={() => {
-            if (isButtonHovered) {
-                return;
-            }
-            handleCardClick();
-        }}>
+        <IonCard className="game-card" onClick={handleCardClick}>
             <IonCardHeader>
                 <IonToolbar>
                     <div className="game-title-container">
@@ -32,32 +24,17 @@ const Game: React.FC<GameComponentProps> = (props) => {
                         <IonIcon icon={gameController} className="game-icon" />
                     </div>
                 </IonToolbar>
-                <IonCardSubtitle className="game-release-date">Release date: {props.release_date}</IonCardSubtitle>
+                <IonCardSubtitle className="game-release-date">Release date: {new Date(props.release_date).toDateString()}</IonCardSubtitle>
             </IonCardHeader>
             <IonCardContent>
                 <div className="game-rental-info">
-                    <IonLabel className="game-rental-price">Rental price: {props.rental_price.toPrecision()}</IonLabel>
-                    {
-                        props.isRented ?
-                            <>
-                                <IonLabel color={"danger"} className="game-rental-status">Rented</IonLabel>
-                                <IonButton
-                                    onClick={props.rentGame}
-                                    onMouseEnter={() => { setIsButtonHovered(true); }}
-                                    onMouseLeave={() => { setIsButtonHovered(false); }}>Return Game</IonButton>
-                            </> :
-                            <>
-                                <IonLabel color={"success"} className="game-rental-status">Available</IonLabel>
-                                <IonButton
-                                    onClick={props.rentGame}
-                                    onMouseEnter={() => { setIsButtonHovered(true); }}
-                                    onMouseLeave={() => { setIsButtonHovered(false); }}>Rent Game</IonButton>
-                            </>
-                    }
+                    <IonLabel>Rating: {props.rating.toPrecision()}</IonLabel>
+                    <IonLabel>Category: {props.category}</IonLabel>
+                    <IonLabel id="game-rental-price">Rental price: {props.rental_price.toPrecision()}</IonLabel>
                 </div>
             </IonCardContent>
-        </IonCard>
+        </IonCard >
     );
-};
+});
 
 export default Game;

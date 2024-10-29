@@ -10,7 +10,7 @@ export interface GameProps {
 }
 
 export const GameCategory: string[] = [
-    'Action', 'Adventure', 'Fighting', 'Misc', 
-    'Platform', 'Puzzle', 'Racing', 'Role-Playing', 
+    'Action', 'Adventure', 'Fighting', 'Misc',
+    'Platform', 'Puzzle', 'Racing', 'Role-Playing',
     'Shooter', 'Simulation', 'Sports', 'Strategy'
 ];

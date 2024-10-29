@@ -187,11 +187,16 @@ const GameDetail: React.FC<GameDetailProps> = ({ history, location }) => {
                             <IonLabel slot="start">0</IonLabel>
                             <IonLabel slot="end">10</IonLabel>
                         </IonRange>
-                        <IonSelect name="category" label="Category" labelPlacement="floating" onIonChange={handleInputChange("category")}>
+                        <IonSelect name="category"
+                            label="Category"
+                            labelPlacement="floating"
+                            value={game.category}
+                            onIonChange={handleInputChange("category")}>
                             {GameCategory.map((category) => (
                                 <IonSelectOption key={category} value={category}>{category}</IonSelectOption>
                             ))}
                         </IonSelect>
+                        <IonButton onClick={handleSave}>Save</IonButton>
                     </IonCardContent>
                 </IonCard>
             </IonContent>

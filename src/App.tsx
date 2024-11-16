@@ -1,4 +1,4 @@
-import { Redirect, Route } from 'react-router-dom';
+import { Redirect, Route, Switch } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 
@@ -33,19 +33,54 @@ import '@ionic/react/css/palettes/dark.system.css';
 import './theme/variables.css';
 import GameList from './game/GameList';
 import GameDetail from './game/GameDetail';
+import PrivateRoute from './core/PrivateRoute';
+import Login from './auth/Login';
+import { getLogger } from './core';
+import { useSelector } from 'react-redux';
+import React from "react";
+import Register from "./auth/Register";
+import { GameStopState } from './core/GameStopStore';
+import { isEqual } from 'lodash';
+import useSyncService from './core/syncService';
 
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/gamestop/games" component={GameList} />
-        <Route exact path="/gamestop/game/" component={GameDetail} />
-        <Route component={GameList} />
-      </IonRouterOutlet>
-    </IonReactRouter>
-  </IonApp>
-);
+const log = getLogger("App");
+
+const App: React.FC = () => {
+  log("App start");
+
+  useSyncService();
+  const isAuthenticated = useSelector((state: GameStopState) => state.auth.isAuthenticated, isEqual);
+  log("isAuthenticated", isAuthenticated);
+
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <IonRouterOutlet>
+          <Route exact
+            path="/gamestop/login"
+            component={isAuthenticated ? GameList : Login}
+          />
+          <Route exact
+            path="/gamestop/register"
+            component={isAuthenticated ? GameList : Register}
+          />
+          <PrivateRoute
+            element={GameList}
+            isAuthenticated={isAuthenticated}
+            exact
+            path="/gamestop/games" />
+          <PrivateRoute
+            element={GameDetail}
+            isAuthenticated={isAuthenticated}
+            exact
+            path="/gamestop/game/" />
+          <Route component={isAuthenticated ? GameList : Login} />
+        </IonRouterOutlet>
+      </IonReactRouter>
+    </IonApp>
+  )
+};
 
 export default App;

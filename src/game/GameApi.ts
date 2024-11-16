@@ -1,33 +1,55 @@
-import axios from "axios";
-import { baseUrl, getLogger, withLogs } from "../core";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseUrl} from "../core";
 import { GameProps } from "./GameProps";
 
-const log = getLogger("GameApi");
-const gameApiUrl = `${baseUrl}/gamestop/api/games`;
+const apiQuery = fetchBaseQuery({
+  baseUrl: `${baseUrl}/gamestop/api`,
+  credentials: "same-origin",
+  mode: "cors",
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return headers;
+  },
+});
 
-const config = {
-    headers: {
-        "Content-Type": "application/json",
-    },
-}
+export const gameApi = createApi({
+  reducerPath: "gameApi",
+  baseQuery: apiQuery,
+  tagTypes: ["GameList"],
+  endpoints: (builder) => ({
+    getGames: builder.query<GameProps[], void>({
+      query: () => "games",
+      providesTags: ["GameList"],
+    }),
+    getGame: builder.query<GameProps, string>({
+      query: (id) => `games/${id}`,
+      providesTags: ["GameList"],
+    }),
+    saveGame: builder.mutation<string, GameProps>({
+      query: (game) => ({
+        url: "games",
+        method: "POST",
+        body: game,
+      }),
+      invalidatesTags: ["GameList"],
+    }),
+    updateGame: builder.mutation<GameProps, GameProps>({
+      query: (game) => ({
+        url: "games",
+        method: "PUT",
+        body: game,
+      }),
+      invalidatesTags: ["GameList"],
+    }),
+  }),
+});
 
-export const getGames: () => Promise<GameProps[]> = () => {
-    log("getGames");
-    return withLogs<GameProps[]>(axios.get(gameApiUrl, config), "getGames");
-}
-
-export const getGame: (id: string) => Promise<GameProps> = (id) => {
-    return withLogs<GameProps>(axios.get(`${gameApiUrl}/${id}`, config), "getGame");
-}
-
-export const addGame: (game: GameProps) => Promise<string> = (game) => {
-    return withLogs(axios.post(gameApiUrl, game, config), "addGame");
-}
-
-export const updateGame: (game: GameProps) => Promise<undefined | string> = (game) => {
-    return withLogs(axios.put(`${gameApiUrl}/${game._id}`, game, config), "updateGame");
-}
-
-export const removeGame: (game: GameProps) => Promise<undefined | string> = (game) => {
-    return withLogs(axios.delete(`${gameApiUrl}/${game._id}`, config), "removeGame");
-}
+export const {
+  useGetGamesQuery,
+  useGetGameQuery,
+  useSaveGameMutation,
+  useUpdateGameMutation,
+} = gameApi;

@@ -8,10 +8,6 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface LogoutRequest {
-  username: string;
-}
-
 export interface RegisterRequest {
   username: string;
   password: string;
@@ -21,12 +17,23 @@ export interface AuthResponse {
   token: string;
 }
 
+const apiQuery = fetchBaseQuery({
+  baseUrl: `${baseUrl}/gamestop/api/auth`,
+  credentials: "same-origin",
+  mode: "cors",
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return headers;
+  },
+});
+
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${baseUrl}/gamestop/api/auth`,
-    credentials: "include",
-  }),
+  baseQuery: apiQuery,
+  refetchOnMountOrArgChange: false,
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, LoginRequest>({
       query: (userInfo) => ({
@@ -39,11 +46,10 @@ export const authApi = createApi({
         },
       }),
     }),
-    logout: builder.mutation<void, LogoutRequest>({
-      query: (userInfo) => ({
+    logout: builder.mutation<void, void>({
+      query: () => ({
         url: "logout",
         method: "POST",
-        body: userInfo,
         validateStatus: (response) => {
           log("logout", response);
           return response.status === 200;
@@ -57,7 +63,7 @@ export const authApi = createApi({
         body: userInfo,
         validateStatus: (response, result) => {
           log("register", response, result);
-          return response.status === 200 && result.token !== undefined;
+          return response.status === 201 && result.token !== undefined;
         },
       }),
     }),

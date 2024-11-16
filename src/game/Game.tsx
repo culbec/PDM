@@ -1,19 +1,24 @@
 import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonCardSubtitle, IonLabel, IonToolbar } from "@ionic/react";
 import { GameProps } from "./GameProps";
 import { gameController } from "ionicons/icons";
-import "./Game.css";
 import { useHistory } from "react-router";
-import { memo } from "react";
+import { memo, useCallback } from "react";
+import { useDispatch } from "react-redux";
+import { getLogger } from "../core";
+import { setSelectedGame } from "./GameSlice";
+import "./style/Game.css";
 
-const Game: React.FC<GameProps> = memo((props) => {
+const log = getLogger("Game");
+
+const Game: React.FC<GameProps> = (props) => {
     const history = useHistory();
+    const dispatch = useDispatch();
 
-    const handleCardClick = () => {
-        history.push({
-            pathname: '/gamestop/game/',
-            state: { game: props }
-        });
-    };
+    const handleCardClick = useCallback(() => {
+        log("selected game", props);
+        dispatch(setSelectedGame(props));
+        history.push(`/gamestop/game`);
+    }, [props, dispatch, history]);
 
     return (
         <IonCard className="game-card" onClick={handleCardClick}>
@@ -35,6 +40,6 @@ const Game: React.FC<GameProps> = memo((props) => {
             </IonCardContent>
         </IonCard >
     );
-});
+};
 
-export default Game;
+export default memo(Game);

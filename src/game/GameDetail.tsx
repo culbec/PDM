@@ -14,34 +14,46 @@ import {
     IonLabel,
     IonRange,
     IonSelect,
-    IonSelectOption
+    IonSelectOption,
+    IonAlert
 } from "@ionic/react";
 import { RouteComponentProps } from "react-router";
 import { getLogger } from "../core";
 import { GameCategory, GameProps } from "./GameProps";
-import "./GameDetail.css";
-import { useSaveGameMutation, useUpdateGameMutation } from "./GameStopApi";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, memo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { GameStopState } from "../core/GameStopStore";
+import { clearErrors, clearInfoMessage, setError } from "./GameSlice";
+import "./style/GameDetail.css";
+import { isEqual } from "lodash";
+import useSync from "../core/useSync";
+
 
 interface GameDetailProps extends RouteComponentProps<{ id?: string }> { }
 
 const log = getLogger('GameDetail');
 
-const GameDetail: React.FC<GameDetailProps> = ({ history, location }) => {
-    const _state = location.state as { game: GameProps };
+const initialGame: GameProps = {
+    title: "GameTest",
+    release_date: new Date("2012-10-20T12:00:00.000Z").toISOString(),
+    rental_price: 10.5,
+    rating: 5,
+    category: "Action",
+};
 
-    const [game, setGame] = useState<GameProps>(_state?.game ? _state.game :
-        {
-            title: 'GameTest',
-            release_date: new Date("2012-10-20T12:00:00.000Z").toISOString(),
-            rental_price: 10.5,
-            rating: 5,
-            category: 'Action'
-        });
-    const [saveGame, saveGameResult] = useSaveGameMutation();
-    const [updateGame, updateGameResult] = useUpdateGameMutation();
+const GameDetail: React.FC<GameDetailProps> = ({ history }) => {
+    const dispatch = useDispatch();
+    const { startSync } = useSync(dispatch);
 
-    const checkInputValues: (game: GameProps) => Error = (game) => {
+    const { selectedGame, uiErrors, infoMessage } = useSelector((state: GameStopState) => ({
+        selectedGame: state.game.selectedGame,
+        uiErrors: state.game.uiErrors,
+        infoMessage: state.game.infoMessage,
+    }), isEqual);
+
+    const [game, setGame] = useState<GameProps>(selectedGame ? selectedGame : initialGame);
+
+    const checkInputValues: (game: GameProps) => Error = useCallback((game) => {
         let error = "";
 
         if (game.title === "") {
@@ -73,58 +85,30 @@ const GameDetail: React.FC<GameDetailProps> = ({ history, location }) => {
         }
 
         return new Error(error);
-    }
+    }, [game]);
 
-    const handleSave = useCallback(() => {
+    const handleSave = useCallback(async () => {
         log('handleSave');
 
         // Checking if all the fields are filled
         let error: Error = checkInputValues(game);
-
         if (error.message !== "") {
             log('handleSaveError', error);
-            history.push({
-                pathname: '/gamestop/games',
-                state: { error: error }
-            });
+
+            dispatch(setError({ type: 'saveError', message: error.message }));
+
+            history.replace("/gamestop/games");
             return;
         }
 
-        log(game);
         if (game._id) {
-            log('updateGame');
-            updateGame(game);
-
-            // Checking for errors in the update mutation
-            if (updateGameResult.error) {
-                log('updateGameError', updateGameResult.error);
-                history.push({
-                    pathname: '/gamestop/games',
-                    state: { error: updateGameResult.error }
-                });
-                return;
-            }
+            startSync({ type: "update_game", payload: game });
         } else {
-            log('saveGame');
-            saveGame(game);
-
-            // Checking for errors in the save mutation
-            if (saveGameResult.error) {
-                log('saveGameError', saveGameResult.error);
-                history.push({
-                    pathname: '/gamestop/games',
-                    state: { error: saveGameResult.error }
-                });
-                return;
-            }
+            startSync({ type: "save_game", payload: game });
         }
-        history.push({
-            pathname: '/gamestop/games',
-            state: { error: undefined },
-        })
-    }, [game, saveGame, updateGame, history]);
+    }, [game, startSync, dispatch, history]);
 
-    const handleInputChange = (field: keyof GameProps) => (e: CustomEvent) => {
+    const handleInputChange = useCallback((field: keyof GameProps) => (e: CustomEvent) => {
         const inputElement = e.target as HTMLInputElement;
         let value: any = inputElement.value;
         log(`Updating ${field} with value ${value}`);
@@ -135,7 +119,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ history, location }) => {
         }
 
         setGame((oldGame) => ({ ...oldGame, [field]: value }));
-    };
+    }, [game]);
 
     log('render');
     return (
@@ -146,6 +130,26 @@ const GameDetail: React.FC<GameDetailProps> = ({ history, location }) => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
+                {
+                    uiErrors.fetchError !== undefined || uiErrors.saveError !== undefined
+                    &&
+                    <IonAlert
+                        isOpen={uiErrors.fetchError !== undefined || uiErrors.saveError !== undefined}
+                        header={"Error"}
+                        message={uiErrors.fetchError ?? uiErrors.saveError}
+                        buttons={["OK"]}
+                        onDidDismiss={() => dispatch(clearErrors())} />
+                }
+                {
+                    infoMessage !== undefined
+                    &&
+                    <IonAlert
+                        isOpen={infoMessage !== undefined}
+                        header={"Info"}
+                        message={infoMessage ?? ''}
+                        buttons={["OK"]}
+                        onDidDismiss={() => dispatch(clearInfoMessage())} />
+                }
                 <IonCard className="centered-card">
                     <IonCardHeader>
                         <IonCardTitle>Game Details</IonCardTitle>
@@ -204,4 +208,4 @@ const GameDetail: React.FC<GameDetailProps> = ({ history, location }) => {
     );
 };
 
-export default GameDetail;
+export default memo(GameDetail);

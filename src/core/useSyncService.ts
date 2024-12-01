@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import useSync from "./useSync";
 import { useDispatch } from "react-redux";
+import { getLogger } from ".";
 import useNetwork from "./useNetwork";
+
+const log = getLogger("useSyncService");
 
 const useSyncService = () => {
   const dispatch = useDispatch();
@@ -9,8 +12,12 @@ const useSyncService = () => {
   const { startSync } = useSync(dispatch);
 
   useEffect(() => {
-    startSync();
-  }, [networkStatus, startSync]);
+    log("useEffect");
+
+    if (networkStatus.isConnected) {
+      startSync();
+    }
+  }, [networkStatus.isConnected, startSync]);
 };
 
 export default useSyncService;

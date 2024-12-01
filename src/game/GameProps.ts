@@ -1,3 +1,5 @@
+import { GamePhoto } from "../photo/usePhoto";
+
 export interface GameProps {
   _id?: string;
   title: string;
@@ -5,6 +7,7 @@ export interface GameProps {
   rental_price: number;
   rating: number;
   category: string;
+  location: {latitude: number, longitude: number};
   date?: string;
   version?: number;
 }

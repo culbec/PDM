@@ -15,21 +15,34 @@ import {
     IonRange,
     IonSelect,
     IonSelectOption,
-    IonAlert
+    IonAlert,
+    IonGrid,
+    IonRow,
+    IonCol,
+    IonIcon,
+    IonImg,
+    IonActionSheet,
+    IonText,
 } from "@ionic/react";
+import { camera, trash, close } from "ionicons/icons";
 import { RouteComponentProps } from "react-router";
 import { getLogger } from "../core";
 import { GameCategory, GameProps } from "./GameProps";
-import { useState, useCallback, useEffect, memo } from "react";
+import { useState, useCallback, memo, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GameStopState } from "../core/GameStopStore";
 import { clearErrors, clearInfoMessage, setError } from "./GameSlice";
-import "./style/GameDetail.css";
+import "../styles/GameDetail.css";
+import "../styles/animations.css";
 import { isEqual } from "lodash";
 import useSync from "../core/useSync";
+import { GamePhoto, usePhoto } from "../photo/usePhoto";
+import { useMyLocation } from "../maps/useMyLocation";
+import MyMap from "../maps/MyMap";
 
 
-interface GameDetailProps extends RouteComponentProps<{ id?: string }> { }
+interface GameDetailProps extends RouteComponentProps {
+}
 
 const log = getLogger('GameDetail');
 
@@ -39,19 +52,28 @@ const initialGame: GameProps = {
     rental_price: 10.5,
     rating: 5,
     category: "Action",
+    location: { latitude: 37.422734313508634, longitude: -122.08532438857299 },
 };
 
 const GameDetail: React.FC<GameDetailProps> = ({ history }) => {
     const dispatch = useDispatch();
     const { startSync } = useSync(dispatch);
 
-    const { selectedGame, uiErrors, infoMessage } = useSelector((state: GameStopState) => ({
+    const { selectedGame, uiErrors, infoMessage } = useSelector((state: GameStopState & { game: { selectedGame: GameProps, uiErrors: any, infoMessage: string } }) => ({
         selectedGame: state.game.selectedGame,
         uiErrors: state.game.uiErrors,
         infoMessage: state.game.infoMessage,
     }), isEqual);
 
     const [game, setGame] = useState<GameProps>(selectedGame ? selectedGame : initialGame);
+
+    const [photoToDelete, setPhotoToDelete] = useState<GamePhoto | undefined>(undefined);
+    const { photos } = useSelector((state: GameStopState) => state.photo, isEqual);
+    const { takePhoto, deletePhoto } = usePhoto();
+
+    const gamePhotos = useMemo(() => photos.filter(photo => photo.game_id === game._id), [photos, game._id]);
+
+    const location = useMyLocation();
 
     const checkInputValues: (game: GameProps) => Error = useCallback((game) => {
         let error = "";
@@ -122,11 +144,12 @@ const GameDetail: React.FC<GameDetailProps> = ({ history }) => {
     }, [game]);
 
     log('render');
+    log('selectedGame', selectedGame);
     return (
-        <IonPage>
+        <IonPage className="page-transition">
             <IonHeader>
                 <IonToolbar>
-                    <IonTitle>{!game._id ? 'Add New Game' : 'Edit Game'}</IonTitle>
+                    <IonTitle>{game._id ? 'Edit Game' : 'Add New Game'}</IonTitle>
                 </IonToolbar>
             </IonHeader>
             <IonContent>
@@ -150,6 +173,52 @@ const GameDetail: React.FC<GameDetailProps> = ({ history }) => {
                         buttons={["OK"]}
                         onDidDismiss={() => dispatch(clearInfoMessage())} />
                 }
+                <IonGrid>
+                    <IonRow>
+                        {
+                            game._id &&
+                            <IonCol key="game-photos">
+                                <IonCard className="centered-card ion-margin">
+                                    <IonCardContent>
+                                        <IonGrid>
+                                            <IonRow>
+                                                {gamePhotos.length === 0 && <IonCol className="ion-padding" style={{ textAlign: "center", fontSize: "1.4rem" }}>No photos!</IonCol>}
+                                                {gamePhotos.map((photo, index) => (
+                                                    <IonCol className="ion-padding" key={index} size="6">
+                                                        <IonImg onClick={() => setPhotoToDelete(photo)} src={`data:image/jpeg;base64,${photo.data}`} />
+                                                    </IonCol>
+                                                ))}
+                                            </IonRow>
+                                        </IonGrid>
+                                        <IonButton onClick={() => takePhoto!(game._id!)}>
+                                            <IonIcon style={{ fontSize: "1.5rem" }} icon={camera} />
+                                        </IonButton>
+                                    </IonCardContent>
+                                </IonCard>
+                            </IonCol>
+                        }
+                        <IonCol key="maps">
+                            <IonCard className="centered-card ion-margin">
+                                <IonCardContent>
+                                    {
+                                        location.loading ?
+                                            <IonText>Loading location...</IonText> :
+                                            <MyMap
+                                                latitude={game.location.latitude}
+                                                longitude={game.location.longitude}
+                                                onMapClick={(e: { latitude: number, longitude: number }) => {
+                                                    log("onMapClick", e);
+                                                    setGame((oldGame) => ({ ...oldGame, location: { latitude: e.latitude, longitude: e.longitude } }));
+                                                }}
+                                                onMarkerClick={() => log("onMarkerClick")}
+                                                mode="addMarker"
+                                            />
+                                    }
+                                </IonCardContent>
+                            </IonCard>
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
                 <IonCard className="centered-card">
                     <IonCardHeader>
                         <IonCardTitle>Game Details</IonCardTitle>
@@ -203,9 +272,34 @@ const GameDetail: React.FC<GameDetailProps> = ({ history }) => {
                         <IonButton onClick={handleSave}>Save</IonButton>
                     </IonCardContent>
                 </IonCard>
+                <IonActionSheet
+                    isOpen={photoToDelete !== undefined}
+                    header="Delete Photo?"
+                    buttons={[
+                        {
+                            text: "Delete",
+                            role: "destructive",
+                            icon: trash,
+                            handler: () => {
+                                deletePhoto(photoToDelete!);
+                                setPhotoToDelete(undefined);
+                            },
+                        },
+                        {
+                            text: "Cancel",
+                            role: "cancel",
+                            icon: close,
+                        },
+                    ]}
+                    onDidDismiss={() => setPhotoToDelete(undefined)}
+                />
             </IonContent>
         </IonPage >
     );
 };
 
 export default memo(GameDetail);
+
+function writePhoto(photo: GamePhoto) {
+    throw new Error("Function not implemented.");
+}

@@ -1,5 +1,5 @@
 import { getErrorMessage, getLogger } from "../core";
-import React, { useCallback } from "react";
+import React, { memo, useCallback } from "react";
 import { useRegisterMutation } from "./AuthApi";
 import {
     IonAlert,
@@ -15,7 +15,7 @@ import {
 import { useForm } from "react-hook-form";
 import { RouteComponentProps } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
-import { clearAuthError, setAuthError, setToken } from "./AuthSlice";
+import { clearAuthError, setAuthError, setToken, setUserId } from "./AuthSlice";
 import { GameStopState } from "../core/GameStopStore";
 
 const log = getLogger("Register");
@@ -57,8 +57,7 @@ const Register: React.FC<RouteComponentProps> = ({ history }) => {
                 return;
             }
 
-            log("handleLogin token", result.token);
-
+            dispatch(setUserId(result.user_id));
             dispatch(setToken(result.token));
             history.push("/gamestop/games");
         } catch (error: any) {
@@ -138,4 +137,4 @@ const Register: React.FC<RouteComponentProps> = ({ history }) => {
     );
 }
 
-export default Register;
+export default memo(Register);

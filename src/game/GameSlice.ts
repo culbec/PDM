@@ -9,6 +9,7 @@ interface GameState {
   };
   infoMessage: string | undefined;
   notification: string | undefined;
+  loadingGames: boolean;
 }
 
 const initialState: GameState = {
@@ -19,6 +20,7 @@ const initialState: GameState = {
   },
   infoMessage: undefined,
   notification: undefined,
+  loadingGames: true,
 };
 
 const gameSlice = createSlice({
@@ -67,6 +69,9 @@ const gameSlice = createSlice({
         state.notification = initialState.notification;
       }
     },
+    setLoadingGames: (state, action: PayloadAction<boolean>) => {
+      state.loadingGames = action.payload;
+    },
   },
 });
 
@@ -78,6 +83,7 @@ export const {
   clearInfoMessage,
   setNotification,
   clearNotification,
+  setLoadingGames,
 } = gameSlice.actions;
 
 export default gameSlice.reducer;

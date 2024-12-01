@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import useNetwork, { NetworkStatus } from "./useNetwork";
+import useNetwork from "./useNetwork";
 import { useSaveGameMutation, useUpdateGameMutation } from "../game/GameApi";
 import { useHistory } from "react-router";
 import { getErrorMessage, getLogger } from ".";
@@ -9,10 +9,15 @@ import { forEach } from "lodash";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { GameProps } from "../game/GameProps";
 import { clearToken } from "../auth/AuthSlice";
+import {
+  useDeletePhotoMutation,
+  useSavePhotoMutation,
+} from "../photo/PhotoApi";
+import { GamePhoto } from "../photo/usePhoto";
 
 interface SyncProps {
-  type: "save_game" | "update_game";
-  payload: GameProps;
+  type: "save_game" | "update_game" | "save_photo" | "delete_photo";
+  payload: GameProps | GamePhoto;
 }
 
 const log = getLogger("useSync");
@@ -23,23 +28,39 @@ const useSync = (dispatch: Dispatch) => {
 
   const [saveGame] = useSaveGameMutation();
   const [updateGame] = useUpdateGameMutation();
+  const [savePhoto] = useSavePhotoMutation();
+  const [deletePhoto] = useDeletePhotoMutation();
 
   const processSync: (
     syncProps: SyncProps,
     syncs: SyncProps[]
   ) => SyncProps[] = (syncProps, syncs) => {
-    const { type, payload } = syncProps;
+    let { type, payload } = syncProps;
 
     // Add or update the existing sync operation
     if (syncs.length > 0) {
       syncs = syncs.reduce((acc: SyncProps[], sync: SyncProps) => {
-        if (sync.type === type && sync.payload._id === payload._id) {
-          return [...acc, { type, payload }];
+        if ((sync.payload as GameProps)._id !== undefined) {
+          sync.payload = sync.payload as GameProps;
+          payload = payload as GameProps;
+          if (sync.type === type && sync.payload._id === payload._id) {
+            return [...acc, { type, payload }];
+          }
+          if (type === "save_game" && sync.payload.title === payload.title) {
+            return acc;
+          }
+          return [...acc, sync];
+        } else {
+          sync.payload = sync.payload as GamePhoto;
+          payload = payload as GamePhoto;
+          if (
+            sync.type === type &&
+            sync.payload.filepath === payload.filepath
+          ) {
+            return [...acc, { type, payload }];
+          }
+          return [...acc, sync];
         }
-        if (type === "save_game" && sync.payload.title === payload.title) {
-          return acc;
-        }
-        return [...acc, sync];
       }, []);
     } else {
       syncs.push({ type, payload });
@@ -98,17 +119,31 @@ const useSync = (dispatch: Dispatch) => {
             try {
               switch (type) {
                 case "save_game": {
-                  await saveGame(payload).unwrap();
+                  await saveGame(payload as GameProps).unwrap();
 
                   log("saveGameSuccess");
                   infos.push("Game saved successfully!");
                   break;
                 }
                 case "update_game": {
-                  await updateGame(payload).unwrap();
+                  await updateGame(payload as GameProps).unwrap();
 
                   log("updateGameSuccess");
                   infos.push("Game updated successfully!");
+                  break;
+                }
+                case "save_photo": {
+                  await savePhoto(payload as GamePhoto).unwrap();
+
+                  log("savePhotoSuccess");
+                  infos.push("Photo saved successfully!");
+                  break;
+                }
+                case "delete_photo": {
+                  await deletePhoto(payload as GamePhoto).unwrap();
+
+                  log("deletePhotoSuccess");
+                  infos.push("Photo deleted successfully!");
                   break;
                 }
                 default: {
@@ -157,7 +192,7 @@ const useSync = (dispatch: Dispatch) => {
         }
       }
     },
-    [networkStatus, saveGame, updateGame, dispatch, history]
+    [networkStatus, saveGame, updateGame]
   );
 
   return { startSync };

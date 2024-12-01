@@ -1,19 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { baseUrl} from "../core";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { apiQuery } from "../core";
 import { GameProps } from "./GameProps";
-
-const apiQuery = fetchBaseQuery({
-  baseUrl: `${baseUrl}/gamestop/api`,
-  credentials: "same-origin",
-  mode: "cors",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    return headers;
-  },
-});
 
 export const gameApi = createApi({
   reducerPath: "gameApi",

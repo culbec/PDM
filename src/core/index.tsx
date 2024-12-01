@@ -1,5 +1,5 @@
 import { SerializedError } from "@reduxjs/toolkit";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { fetchBaseQuery, FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 export const baseUrl = 'http://localhost:3000';
 
@@ -99,3 +99,16 @@ export const newWebSocket = (token: string, onMessage: (data: MessageData) => vo
 
     return { ws, sendLogoutMessage };
 }
+
+export const apiQuery = fetchBaseQuery({
+    baseUrl: `${baseUrl}/gamestop/api`,
+    credentials: "same-origin",
+    mode: "cors",
+    prepareHeaders: (headers) => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            headers.set("Authorization", `Bearer ${token}`);
+        }
+        return headers;
+    },
+});

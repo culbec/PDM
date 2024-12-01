@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PluginListenerHandle } from "@capacitor/core";
 import { ConnectionStatus, Network } from "@capacitor/network";
 import { getLogger } from ".";
@@ -19,38 +19,50 @@ const useNetwork = () => {
   const [networkStatus, setNetworkStatus] =
     useState<NetworkStatus>(initialStatus);
 
+  const handlerNetworkStatus = useCallback((status: ConnectionStatus) => {
+    log("network status", status);
+    setNetworkStatus((prev) => {
+      if (
+        prev.isConnected !== status.connected ||
+        prev.connectionType !== status.connectionType
+      ) {
+        return {
+          isConnected: status.connected,
+          connectionType: status.connectionType,
+        };
+      }
+
+      return prev;
+    });
+  }, []);
+
   useEffect(() => {
+    let cancelled = false;
     let handler: PluginListenerHandle;
 
-    registerNetworkListener();
-    Network.getStatus().then(handlerNetworkStatus);
+    async function registerNetworkListener() {
+      try {
+        const status = await Network.getStatus();
+        if (!cancelled) {
+          handlerNetworkStatus(status);
+        }
 
-    let cancelled = false;
+        handler = await Network.addListener(
+          "networkStatusChange",
+          handlerNetworkStatus
+        );
+      } catch (error) {
+        log("registerNetworkListener", error);
+      }
+    }
+
+    registerNetworkListener();
 
     return () => {
       cancelled = true;
       handler?.remove();
     };
-
-    async function registerNetworkListener() {
-      handler = await Network.addListener(
-        "networkStatusChange",
-        handlerNetworkStatus
-      );
-    }
-
-    async function handlerNetworkStatus(status: ConnectionStatus) {
-      if (cancelled) {
-        return;
-      }
-
-      log("network status", status);
-      setNetworkStatus({
-        isConnected: status.connected,
-        connectionType: status.connectionType,
-      });
-    }
-  }, []);
+  }, [handlerNetworkStatus]);
 
   return { networkStatus };
 };

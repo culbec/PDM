@@ -1,12 +1,13 @@
-import React, { useCallback, useState } from "react";
+import React, { memo, useCallback, useState } from "react";
 import { useLoginMutation } from "./AuthApi";
 import { getErrorMessage, getLogger } from "../core";
 import { IonAlert, IonButton, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonLoading, IonPage, IonTitle, IonToolbar } from "@ionic/react";
 import { RouteComponentProps } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
-import { clearAuthError, setAuthError, setToken } from "./AuthSlice";
+import { clearAuthError, setAuthError, setToken, setUserId } from "./AuthSlice";
 import { GameStopState } from "../core/GameStopStore";
 import { isEqual } from "lodash";
+import "../styles/animations.css";
 
 const log = getLogger("Login");
 
@@ -39,8 +40,7 @@ const Login: React.FC<RouteComponentProps> = ({ history }) => {
                 return;
             }
 
-            log("handleLogin token", result.token);
-
+            dispatch(setUserId(result.user_id));
             dispatch(setToken(result.token));
             history.push("/gamestop/games");
         } catch (error: any) {
@@ -56,8 +56,18 @@ const Login: React.FC<RouteComponentProps> = ({ history }) => {
             <IonHeader>
                 <IonToolbar>
                     <IonTitle>Login</IonTitle>
-                    <IonButton slot="end" onClick={() => history.push("/gamestop/login")}>Login</IonButton>
-                    <IonButton slot="end" onClick={() => history.push("/gamestop/register")}>Register</IonButton>
+                    <IonButton
+                        className="animated-button-bounce"
+                        slot="end"
+                        onClick={() => history.push("/gamestop/login")}>
+                        Login
+                    </IonButton>
+                    <IonButton
+                        className="animated-button-bounce"
+                        slot="end"
+                        onClick={() => history.push("/gamestop/register")}>
+                        Register
+                    </IonButton>
                 </IonToolbar>
             </IonHeader>
             <IonContent className="ion-padding">
@@ -75,17 +85,28 @@ const Login: React.FC<RouteComponentProps> = ({ history }) => {
                 }
                 <IonLoading isOpen={loginResult.isLoading} message="Logging in..." />
                 <IonItem>
-                    <IonLabel position="floating">Username</IonLabel>
-                    <IonInput className="ion-padding-top ion-padding-start" value={username} onIonChange={e => setUsername(e.detail.value!)} />
+                    <IonLabel
+                        position="floating">Username</IonLabel>
+                    <IonInput
+                        className="ion-padding-top ion-padding-start"
+                        value={username}
+                        onIonChange={e => setUsername(e.detail.value!)} />
                 </IonItem>
                 <IonItem>
                     <IonLabel position="floating">Password</IonLabel>
-                    <IonInput className="ion-padding-top ion-padding-start" type="password" value={password} onIonChange={e => setPassword(e.detail.value!)} />
+                    <IonInput
+                        className="ion-padding-top ion-padding-start"
+                        type="password"
+                        value={password}
+                        onIonChange={e => setPassword(e.detail.value!)} />
                 </IonItem>
-                <IonButton className="ion-margin" expand="block" onClick={handleLogin}>Login</IonButton>
+                <IonButton
+                    className="ion-margin animated-button-squash"
+                    expand="block"
+                    onClick={handleLogin}>Login</IonButton>
             </IonContent>
         </IonPage>
     )
 }
 
-export default Login;
+export default memo(Login);

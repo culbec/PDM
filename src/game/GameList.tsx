@@ -1,21 +1,50 @@
-import { InfiniteScrollCustomEvent, IonAlert, IonButton, IonCol, IonContent, IonFab, IonFabButton, IonGrid, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonLoading, IonPage, IonRow, IonSearchbar, IonSelect, IonSelectOption, IonText, IonTitle, IonToast, IonToolbar } from "@ionic/react";
+import {
+    InfiniteScrollCustomEvent,
+    IonAlert,
+    IonButton,
+    IonCard,
+    IonCardContent,
+    IonCol,
+    IonContent,
+    IonFab,
+    IonFabButton,
+    IonGrid,
+    IonHeader,
+    IonIcon,
+    IonInfiniteScroll,
+    IonInfiniteScrollContent,
+    IonList,
+    IonLoading,
+    IonPage,
+    IonRow,
+    IonSearchbar,
+    IonSelect,
+    IonSelectOption,
+    IonText,
+    IonTitle,
+    IonToast,
+    IonToolbar
+} from "@ionic/react";
 import Game from "./Game";
 import { RouteComponentProps } from "react-router";
 import { getErrorMessage, getLogger, newWebSocket, WSProps } from "../core";
 import { add } from "ionicons/icons";
-import { useGetGamesQuery } from "./GameApi";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GameCategory, GameProps } from "./GameProps";
+import { GameCategory } from "./GameProps";
 import { useDispatch, useSelector } from "react-redux";
 import { GameStopState } from "../core/GameStopStore";
-import { clearErrors, clearInfoMessage, clearNotification, setError, setNotification, setSelectedGame } from "./GameSlice";
-import "./style/GameList.css";
+import { clearErrors, clearInfoMessage, clearNotification, setError, setLoadingGames, setNotification, setSelectedGame } from "./GameSlice";
+import "../styles/GameList.css";
+import "../styles/animations.css";
 import { isEqual } from "lodash";
 import useNetwork from "../core/useNetwork";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { SerializedError } from "@reduxjs/toolkit";
 import { clearToken, setAuthError } from "../auth/AuthSlice";
 import { useLogoutMutation } from "../auth/AuthApi";
+import { usePhoto } from "../photo/usePhoto";
+import { useGames } from "./useGames";
+import { setIsFirstLoad } from "../photo/PhotoSlice";
+import { useMyLocation } from "../maps/useMyLocation";
+import MyMap from "../maps/MyMap";
 
 const log = getLogger('GameList');
 const ITEMS_PER_PAGE = 5;
@@ -26,16 +55,12 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
     const [logoutMutation] = useLogoutMutation();
     const wsRef = useRef<WSProps | null>(null);
 
-    const { notification, uiErrors, infoMessage } = useSelector((state: GameStopState) => ({
+    const { notification, uiErrors, infoMessage, isAuthenticated } = useSelector((state: GameStopState) => ({
         uiErrors: state.game.uiErrors,
         infoMessage: state.game.infoMessage,
         notification: state.game.notification,
+        isAuthenticated: state.auth.isAuthenticated
     }), isEqual);
-
-    const { isAuthenticated } = useSelector((state: GameStopState) => state.auth, isEqual);
-
-    const [games, setGames] = useState<GameProps[]>([]);
-    const { data, error, isLoading, refetch } = useGetGamesQuery();
 
     const [searchFilters, setSearchFilters] = useState({
         title: '',
@@ -43,39 +68,24 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
     })
     const [page, setPage] = useState(1);
 
-    // Fetch items effect
+    const { games } = useGames();
+    const { loadingGames } = useSelector((state: GameStopState) => state.game, isEqual);
+    const { loadingPhotos } = useSelector((state: GameStopState) => state.photo, isEqual);
+    usePhoto();
+
+    const location = useMyLocation();
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Track state loading
     useEffect(() => {
-        if (error) {
-            log('useEffect error', error);
+        const isLoading = loadingGames || loadingPhotos;
+        setIsLoading(isLoading);
 
-            const errorMessage = getErrorMessage(error, 'Failed to fetch games!');
-
-            if ((error as FetchBaseQueryError).status === 401 || (error as SerializedError).code?.includes('401')) {
-                log("Unauthorized -> logging out");
-
-                dispatch(clearToken());
-                history.push('/gamestop/login');
-                return;
-            } else {
-                dispatch(setError({ type: 'fetchError', message: errorMessage }));
-                return;
-            }
+        return () => {
+            setIsLoading(false);
         }
-
-        log('useEffect isLoading', isLoading);
-        if (!isLoading && data) {
-            log('useEffect data', data);
-            setGames(data);
-        }
-
-    }, [data, error, isLoading, refetch, dispatch, clearToken]);
-
-    // Refetch on authentication
-    useEffect(() => {
-        if (isAuthenticated) {
-            refetch();
-        }
-    }, [isAuthenticated, refetch]);
+    }, [loadingGames, loadingPhotos]);
 
     // WS Effect
     useEffect(() => {
@@ -85,17 +95,10 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
             return;
         }
 
-        let cancelled = false;
         const token = localStorage.getItem('token');
-
-        log(token, wsRef.current);
 
         if (token && !wsRef.current) {
             wsRef.current = newWebSocket(token, (message) => {
-                if (cancelled) {
-                    return;
-                }
-
                 if (message.type === 'notification') {
                     dispatch(setNotification(message.payload));
                 } else if (message.type === 'error') {
@@ -106,14 +109,13 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
 
         return () => {
             log('useEffect WS cleanup');
-            cancelled = true;
 
             if (wsRef.current) {
                 wsRef.current.ws.close();
                 wsRef.current = null;
             }
-        }
-    }, [isAuthenticated]);
+        };
+    }, []);
 
     const filteredGames = useMemo(() => {
         log('searchFilters', searchFilters);
@@ -176,17 +178,17 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
         }
 
         dispatch(clearToken());
-        history.push('/gamestop/login');
+        dispatch(setIsFirstLoad(true));
+        setTimeout(() => history.push('/gamestop/login'), 300);
     }, [history, logoutMutation, dispatch]);
 
     log('render');
+    log(`loadingStatuses - loadingGames: ${loadingGames}, loadingPhotos: ${loadingPhotos}`);
     return (
-        <IonPage>
+        <IonPage className="page-transition">
             <IonHeader>
                 <IonToolbar>
-                    <IonTitle
-                        slot="start"
-                    >Games</IonTitle>
+                    <IonTitle slot="start">Games</IonTitle>
                 </IonToolbar>
             </IonHeader>
             <IonContent>
@@ -197,12 +199,16 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
                             style={{ textAlign: "center" }}
                             slot="end">Network: {networkStatus?.isConnected ? 'Connected' : 'Disconnected'} | Connection: {networkStatus.connectionType}</IonText>
                         <IonButton
-                            className="ion-padding"
+                            className="ion-padding animated-button-squash"
                             style={{ textAlign: "center" }}
                             fill="clear"
                             onClick={handleLogout}>Logout</IonButton>
-                        <IonSearchbar value={searchFilters.title} onIonChange={(e) => handleFilterChange("title", e.detail.value!)} placeholder="Search by title..." />
-                        <IonSelect name="category"
+                        <IonSearchbar
+                            value={searchFilters.title}
+                            onIonChange={(e) => handleFilterChange("title", e.detail.value!)}
+                            placeholder="Search by title..." />
+                        <IonSelect
+                            name="category"
                             label="Category"
                             labelPlacement="floating"
                             value={searchFilters.category}
@@ -233,8 +239,34 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
                         buttons={["OK"]}
                         onDidDismiss={() => dispatch(clearInfoMessage())} />
                 }
-                <IonLoading isOpen={isLoading} message="Fetching games..." />
+                <IonLoading isOpen={isLoading} message="Loading..." />
                 <div>
+                    <IonCard className="centered-card ion-margin">
+                        <IonCardContent>
+                            {
+                                location.loading ?
+                                    <IonText>Loading location...</IonText> :
+                                    <MyMap
+                                        latitude={location.position?.coords.latitude ?? 0}
+                                        longitude={location.position?.coords.longitude ?? 0}
+                                        onMapClick={() => log("onMapClick")}
+                                        onMarkerClick={(e: { latitude: number, longitude: number }) => {
+                                            log("onMarkerClick", e);
+
+                                            // Find the game with the same location
+                                            const game = games?.find(g => g.location.latitude === e.latitude && g.location.longitude === e.longitude);
+
+                                            if (game) {
+                                                dispatch(setSelectedGame(game));
+                                                setTimeout(() => history.push("/gamestop/game"), 300);
+                                            }
+                                        }}
+                                        mode="viewOnly"
+                                        games={games}
+                                    />
+                            }
+                        </IonCardContent>
+                    </IonCard>
                     <IonGrid>
                         {
                             filteredGames && (
@@ -246,9 +278,6 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
                                     ))}
                                 </IonRow>
                             )
-                        }
-                        {
-                            error && (<IonLabel color={"danger"}>Failed to fetch games!</IonLabel>)
                         }
                     </IonGrid>
                     <IonInfiniteScroll
@@ -265,7 +294,10 @@ const GameList: React.FC<RouteComponentProps> = ({ history }) => {
                     onDidDismiss={() => dispatch(clearNotification())}
                 />
                 <IonFab vertical="bottom" horizontal="end" slot="fixed">
-                    <IonFabButton color={"tertiary"} onClick={handleAddGame}>
+                    <IonFabButton
+                        className="animated-button-spin"
+                        color={"tertiary"}
+                        onClick={handleAddGame}>
                         <IonIcon icon={add} />
                     </IonFabButton>
                 </IonFab>

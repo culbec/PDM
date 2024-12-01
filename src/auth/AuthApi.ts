@@ -1,5 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { baseUrl, getLogger } from "../core";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { apiQuery, getLogger } from "../core";
 
 const log = getLogger("AuthApi");
 
@@ -14,21 +14,9 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
+  user_id: string;
   token: string;
 }
-
-const apiQuery = fetchBaseQuery({
-  baseUrl: `${baseUrl}/gamestop/api/auth`,
-  credentials: "same-origin",
-  mode: "cors",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    return headers;
-  },
-});
 
 export const authApi = createApi({
   reducerPath: "authApi",
@@ -37,7 +25,7 @@ export const authApi = createApi({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, LoginRequest>({
       query: (userInfo) => ({
-        url: "login",
+        url: "auth/login",
         method: "POST",
         body: userInfo,
         validateStatus: (response, result) => {
@@ -48,7 +36,7 @@ export const authApi = createApi({
     }),
     logout: builder.mutation<void, void>({
       query: () => ({
-        url: "logout",
+        url: "auth/logout",
         method: "POST",
         validateStatus: (response) => {
           log("logout", response);
@@ -58,7 +46,7 @@ export const authApi = createApi({
     }),
     register: builder.mutation<AuthResponse, RegisterRequest>({
       query: (userInfo) => ({
-        url: "register",
+        url: "auth/register",
         method: "POST",
         body: userInfo,
         validateStatus: (response, result) => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useCamera } from "./useCamera";
 import { useFilesystem } from "../core/useFilesystem";
 import { getErrorMessage, getLogger } from "../core";
@@ -11,10 +11,11 @@ import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { SerializedError } from "@reduxjs/toolkit";
 import { clearToken } from "../auth/AuthSlice";
 import { useHistory } from "react-router";
-import { isEqual, set } from "lodash";
+import { isEqual } from "lodash";
 import { setIsFirstLoad, setLoadingPhotos, setPhotosSlice } from "./PhotoSlice";
 
 export interface GamePhoto {
+  _id?: string;
   user_id: string;
   game_id: string;
   filepath: string;

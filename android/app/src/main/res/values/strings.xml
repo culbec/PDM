@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">GameStop</string>
+    <string name="main_label">MainActivity</string>
+    <string name="login">Login</string>
+    <string name="games">Games</string>
+    <string name="game_add">Add game</string>
+    <string name="game_edit">Edit game</string>
+    <string name="game_list">Game list</string>
+</resources>

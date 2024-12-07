@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GameStop" parent="android:Theme.Material.Light" >
+        <item name="android:statusBarColor">@color/navy</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+    <style name="Theme.GameStop.Starting" parent="Theme.SplashScreen">
+        <item name="android:statusBarColor">@color/light_blue</item>
+        <item name="android:windowLightStatusBar">true</item>
+        
+        <!-- Background during splash screen -->
+        <item name="windowSplashScreenBackground">@color/navy</item>
+        <!-- Icon for the splash screen -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/game_console</item>
+        <!-- Animation duration for the splash screen icon -->
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <!-- Post splash screen theme set for the calling activity -->
+        <item name="postSplashScreenTheme">@style/Theme.GameStop</item>
+    </style>
+</resources>

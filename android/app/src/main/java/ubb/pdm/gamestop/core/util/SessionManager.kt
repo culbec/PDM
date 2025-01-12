@@ -1,4 +1,4 @@
-package ubb.pdm.gamestop.core
+package ubb.pdm.gamestop.core.util
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

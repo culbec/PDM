@@ -7,13 +7,13 @@ import okhttp3.OkHttpClient
 import org.bson.types.ObjectId
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import ubb.pdm.gamestop.core.ObjectIdDeserializer
+import ubb.pdm.gamestop.core.util.ObjectIdDeserializer
 import ubb.pdm.gamestop.core.data.UserPreferencesRepository
 
 object Api {
     private const val URL = "172.30.249.45"
     private const val HTTP_URL = "http://$URL:3000/"
-    const val WS_URL = "ws://$URL:3000/"
+    const val WS_URL = "ws://$URL:3000/ws"
 
     private lateinit var userPreferencesRepository: UserPreferencesRepository
 

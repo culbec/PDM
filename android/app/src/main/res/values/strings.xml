@@ -6,4 +6,5 @@
     <string name="game_add">Add game</string>
     <string name="game_edit">Edit game</string>
     <string name="game_list">Game list</string>
+    <string name="location">Location</string>
 </resources>

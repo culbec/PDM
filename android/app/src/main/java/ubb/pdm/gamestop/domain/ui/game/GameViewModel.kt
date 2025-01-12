@@ -10,10 +10,12 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.launch
 import ubb.pdm.gamestop.App
-import ubb.pdm.gamestop.core.Result
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.Result
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.domain.data.game.Game
 import ubb.pdm.gamestop.domain.data.game.GameRepository
+import ubb.pdm.gamestop.domain.data.game.SyncOperation
+import ubb.pdm.gamestop.domain.data.game.SyncStatus
 
 data class GameState(
     val gameId: String? = null,
@@ -53,25 +55,55 @@ class GameViewModel(
         }
     }
 
-    fun saveOrUpdateGame(game: Game) {
+    fun saveOrUpdateGame(
+        game: Game
+    ) {
         viewModelScope.launch {
             Log.d(TAG, "saveOrUpdateGame...")
             try {
                 _gameState.value = _gameState.value.copy(submitResult = Result.Loading)
-
-                // Save the game
-                val savedGame: Game = if (gameId != null) {
-                    gameRepository.update(game)
+                
+                // Inserting the game into the database with
+                // the sync operation and PENDING as sync status
+                game.syncOperation = if (gameId != null) {
+                    SyncOperation.UPDATE
                 } else {
-                    gameRepository.save(game)
+                    SyncOperation.CREATE
                 }
+                game.syncStatus = SyncStatus.PENDING
+                gameRepository.insertPending(game)
 
                 _gameState.value = _gameState.value.copy(
-                    game = savedGame,
-                    submitResult = Result.Success(savedGame)
+                    game = game,
+                    submitResult = Result.Success(game)
                 )
             } catch (e: Exception) {
                 Log.w(TAG, "saveOrUpdateGame failed", e)
+                _gameState.value = _gameState.value.copy(submitResult = Result.Error(e))
+            }
+        }
+    }
+    
+    fun deleteGame(
+        game: Game
+    ) {
+        viewModelScope.launch {
+            Log.d(TAG, "deleteGame...")
+            try {
+                _gameState.value = _gameState.value.copy(submitResult = Result.Loading)
+                
+                // Inserting the game into the database with
+                // the sync operation and PENDING as sync status
+                game.syncOperation = SyncOperation.DELETE
+                game.syncStatus = SyncStatus.PENDING
+                gameRepository.insertPending(game)
+
+                _gameState.value = _gameState.value.copy(
+                    game = game,
+                    submitResult = Result.Success(game)
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "deleteGame failed", e)
                 _gameState.value = _gameState.value.copy(submitResult = Result.Error(e))
             }
         }

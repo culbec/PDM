@@ -5,8 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
-import ubb.pdm.gamestop.core.SessionManager
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.SessionManager
+import ubb.pdm.gamestop.core.util.TAG
 
 class AuthInterceptor(
     private val tokenProvider: () -> String?,

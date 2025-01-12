@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import ubb.pdm.gamestop.App
 import ubb.pdm.gamestop.auth.core.AuthRepository
 import ubb.pdm.gamestop.auth.core.remote.TokenHolder
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.core.data.UserPreferences
 import ubb.pdm.gamestop.core.data.UserPreferencesRepository
 

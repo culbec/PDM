@@ -4,7 +4,7 @@ import android.util.Log
 import ubb.pdm.gamestop.auth.core.remote.AuthDataSource
 import ubb.pdm.gamestop.auth.core.remote.TokenHolder
 import ubb.pdm.gamestop.auth.core.remote.User
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.core.data.remote.Api
 
 class AuthRepository(private val authDataSource: AuthDataSource) {

@@ -9,7 +9,7 @@ import ubb.pdm.gamestop.domain.data.game.local.GameDao
 import ubb.pdm.gamestop.domain.data.photo.Photo
 import ubb.pdm.gamestop.domain.data.photo.local.PhotoDao
 
-@Database(entities = [Game::class, Photo::class], version = 3, exportSchema = false)
+@Database(entities = [Game::class, Photo::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun gameDao(): GameDao
     abstract fun photoDao(): PhotoDao

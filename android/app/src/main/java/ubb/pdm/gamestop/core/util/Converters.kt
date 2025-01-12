@@ -1,4 +1,4 @@
-package ubb.pdm.gamestop.core
+package ubb.pdm.gamestop.core.util
 
 import androidx.room.TypeConverter
 import com.google.gson.JsonDeserializationContext

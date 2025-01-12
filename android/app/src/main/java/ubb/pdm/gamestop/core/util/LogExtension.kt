@@ -1,4 +1,4 @@
-package ubb.pdm.gamestop.core
+package ubb.pdm.gamestop.core.util
 
 val Any.TAG: String
     get() {

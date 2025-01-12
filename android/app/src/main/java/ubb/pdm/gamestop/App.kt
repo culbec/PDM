@@ -1,10 +1,13 @@
 package ubb.pdm.gamestop
 
 import android.util.Log
-import ubb.pdm.gamestop.core.TAG
+import android.app.Application
+import androidx.work.Configuration
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.core.data.remote.Api
+import ubb.pdm.gamestop.domain.data.game.worker.GameSyncWorkerFactory
 
-class App : android.app.Application() {
+class App : Application(), Configuration.Provider {
     lateinit var container: AppContainer
 
     override fun onCreate() {
@@ -15,4 +18,9 @@ class App : android.app.Application() {
 
         Api.init(container.userPreferencesRepository)
     }
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(GameSyncWorkerFactory(container.gameRepository))
+            .build()
 }

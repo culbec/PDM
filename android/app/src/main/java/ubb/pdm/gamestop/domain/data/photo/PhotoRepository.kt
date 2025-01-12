@@ -1,7 +1,7 @@
 package ubb.pdm.gamestop.domain.data.photo
 
 import android.util.Log
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.core.data.remote.Api
 import ubb.pdm.gamestop.domain.data.photo.local.PhotoDao
 import ubb.pdm.gamestop.domain.data.photo.remote.PhotoService

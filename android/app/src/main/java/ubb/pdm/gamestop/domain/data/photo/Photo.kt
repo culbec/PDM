@@ -9,7 +9,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.TAG
 import java.io.File
 import java.io.FileOutputStream
 

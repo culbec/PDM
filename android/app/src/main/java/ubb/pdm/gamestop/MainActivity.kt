@@ -9,12 +9,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import ubb.pdm.gamestop.auth.core.AuthRepository
 import ubb.pdm.gamestop.auth.core.remote.AuthDataSource
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.core.data.UserPreferencesRepository
 import ubb.pdm.gamestop.core.data.remote.Api
 import ubb.pdm.gamestop.ui.theme.GameStopTheme
@@ -57,6 +59,20 @@ class MainActivity : ComponentActivity() {
                     AppNavHost(startingRoute)
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            (application as App).container.wsClient.connectWebSocket()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        lifecycleScope.launch {
+            (application as App).container.wsClient.closeWebSocket()
         }
     }
 

@@ -10,7 +10,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import ubb.pdm.gamestop.App
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.core.data.UserPreferencesRepository
 import ubb.pdm.gamestop.domain.data.photo.Photo
 import ubb.pdm.gamestop.domain.data.photo.PhotoRepository

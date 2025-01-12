@@ -1,4 +1,4 @@
-package ubb.pdm.gamestop.core
+package ubb.pdm.gamestop.core.util
 
 sealed interface Result<out T> {
     data class Success<T>(val data: T) : Result<T>

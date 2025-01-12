@@ -1,9 +1,12 @@
 package ubb.pdm.gamestop.domain.ui.game
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,26 +37,41 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import ubb.pdm.gamestop.R
-import ubb.pdm.gamestop.core.Result
-import ubb.pdm.gamestop.core.formatTo
-import ubb.pdm.gamestop.core.toDate
+import ubb.pdm.gamestop.domain.ui.location.MapComposable
+import ubb.pdm.gamestop.domain.ui.location.MapViewModel
+import ubb.pdm.gamestop.domain.ui.location.OnMapClick
+import ubb.pdm.gamestop.domain.ui.location.OnMarkerClick
 import ubb.pdm.gamestop.core.ui.UserPreferencesViewModel
+import ubb.pdm.gamestop.core.util.Result
+import ubb.pdm.gamestop.core.util.formatTo
+import ubb.pdm.gamestop.core.util.toDate
 import ubb.pdm.gamestop.domain.data.game.GameCategory
+
+// TODO: integrate map and assign custom map method to modify the location of the game and retrieve
+// TODO: place the marker on the game's location
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GameScreen(gameId: String?, onClose: () -> Unit) {
+fun GameScreen(
+    gameId: String?,
+    onClose: () -> Unit,
+    onMapClick: OnMapClick?,
+    onMarkerClick: OnMarkerClick?
+) {
     val userPreferencesViewModel =
         viewModel<UserPreferencesViewModel>(factory = UserPreferencesViewModel.Factory)
+
+    val mapViewModel =
+        viewModel<MapViewModel>(factory = MapViewModel.Factory(LocalContext.current.applicationContext as Application))
 
     val gameViewModel = viewModel<GameViewModel>(factory = GameViewModel.Factory(gameId))
     val gameState: GameState by gameViewModel.gameState
@@ -94,6 +112,13 @@ fun GameScreen(gameId: String?, onClose: () -> Unit) {
         gameViewModel.saveOrUpdateGame(game)
     }
 
+    fun handleDelete() {
+        if (gameId != null) {
+            gameViewModel.deleteGame(game)
+        }
+    }
+
+    // what to do on submit?
     LaunchedEffect(gameState.submitResult) {
         if (gameState.submitResult is Result.Success) {
             Log.d("GameScreen", "Closing screen")
@@ -150,6 +175,18 @@ fun GameScreen(gameId: String?, onClose: () -> Unit) {
                     }
                 },
                 actions = {
+                    if (gameId != null) {
+                        Button(
+                            onClick = {
+                                runBlocking(Dispatchers.IO) {
+                                    handleDelete()
+                                }
+                            }, modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
+                        ) {
+                            Text("Delete")
+                        }
+                    }
+                    
                     Button(
                         onClick = {
                             runBlocking(Dispatchers.IO) {
@@ -265,98 +302,119 @@ fun GameScreen(gameId: String?, onClose: () -> Unit) {
             }
 
             Column(
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextField(
-                    label = { Text(text = "Title") },
-                    value = game.title,
-                    placeholder = { Text(text = game.title) },
-                    onValueChange = { game = game.copy(title = it) },
+                MapComposable(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(9.dp)
+                        .fillMaxHeight(0.5f)
+                        .padding(16.dp),
+                    mapViewModel = mapViewModel,
+                    onMapClick = onMapClick,
+                    onMarkerClick = onMarkerClick,
+                    game = game
                 )
-                TextField(
-                    label = { Text(text = "Rental price") },
-                    value = game.rentalPrice.toString(),
-                    placeholder = { Text(text = game.rentalPrice.toString()) },
-                    onValueChange = {
-                        val price = it.toFloatOrNull()
 
-                        if (price != null) {
-                            game = game.copy(rentalPrice = price)
-                        }
-                    },
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(9.dp),
-                    isError = game.rentalPrice < 0f || game.rentalPrice > 100f
-
-                )
-
-                Button(
-                    onClick = { showDatePickerDialog = true },
-                    modifier = Modifier.padding(16.dp)
+                        .background(Color.White)
+                        .border(1.dp, Color.Black)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Select Release Date")
-                }
+                    TextField(
+                        label = { Text(text = "Title") },
+                        value = game.title,
+                        placeholder = { Text(text = game.title) },
+                        onValueChange = { game = game.copy(title = it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(9.dp)
+                    )
+                    TextField(
+                        label = { Text(text = "Rental price") },
+                        value = game.rentalPrice.toString(),
+                        placeholder = { Text(text = game.rentalPrice.toString()) },
+                        onValueChange = {
+                            val price = it.toFloatOrNull()
 
-                if (showDatePickerDialog) {
-                    DatePickerDialog(
-                        onDismissRequest = {
-                            showDatePickerDialog = false
-                        },
-                        confirmButton = {
-                            Button(
-                                onClick = {
-                                    game =
-                                        game.copy(
-                                            releaseDate = datePickerState.selectedDateMillis?.toDate()
-                                                ?.formatTo() ?: ""
-                                        )
-
-                                    showDatePickerDialog = false
-                                }
-                            ) {
-                                Text("OK")
+                            if (price != null) {
+                                game = game.copy(rentalPrice = price)
                             }
                         },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(9.dp),
+                        isError = game.rentalPrice < 0f || game.rentalPrice > 100f
+
+                    )
+
+                    Button(
+                        onClick = { showDatePickerDialog = true },
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        DatePicker(
-                            state = datePickerState,
+                        Text("Select Release Date")
+                    }
+
+                    if (showDatePickerDialog) {
+                        DatePickerDialog(
+                            onDismissRequest = {
+                                showDatePickerDialog = false
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        game =
+                                            game.copy(
+                                                releaseDate = datePickerState.selectedDateMillis?.toDate()
+                                                    ?.formatTo() ?: ""
+                                            )
+
+                                        showDatePickerDialog = false
+                                    }
+                                ) {
+                                    Text("OK")
+                                }
+                            },
+                        ) {
+                            DatePicker(
+                                state = datePickerState,
+                            )
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Row {
+                            Icon(Icons.Rounded.Star, contentDescription = null)
+                            Text(text = "Rating: $sliderPosition")
+                        }
+                        Slider(
+                            value = sliderPosition.toFloat(),
+                            onValueChange = {
+                                sliderPosition = it.toInt()
+                                game = game.copy(rating = it.toInt())
+                            },
+                            valueRange = 1f..10f,
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
-                }
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row {
-                        Icon(Icons.Rounded.Star, contentDescription = null)
-                        Text(text = "Rating: $sliderPosition")
-                    }
-                    Slider(
-                        value = sliderPosition.toFloat(),
-                        onValueChange = {
-                            sliderPosition = it.toInt()
-                            game = game.copy(rating = it.toInt())
-                        },
-                        valueRange = 1f..10f,
-                        modifier = Modifier.padding(16.dp)
-                    )
+
+                    GameCategoryDropdown(
+                        selectedCategory = GameCategory.valueOf(game.category),
+                        onCategorySelected = {
+                            game = game.copy(category = it.value)
+                        })
                 }
 
-                GameCategoryDropdown(
-                    selectedCategory = GameCategory.valueOf(game.category),
-                    onCategorySelected = {
-                        game = game.copy(category = it.value)
-                    })
             }
         }
     }
 }
 
-@Preview
-@Composable
-fun GameScreenPreview() {
-    GameScreen(null) { }
-}
+//@Preview
+//@Composable
+//fun GameScreenPreview() {
+//    GameScreen(null,) { }
+//}

@@ -10,8 +10,11 @@ import ubb.pdm.gamestop.domain.data.game.Game
 
 @Dao
 interface GameDao {
-    @Query("SELECT * FROM games")
+    @Query("SELECT * FROM games WHERE sync_status = 'SYNCED'")
     fun getAll(): Flow<List<Game>>
+    
+    @Query("SELECT * FROM games WHERE sync_status = 'PENDING'")
+    fun getPending(): List<Game>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(game: Game)
@@ -27,4 +30,7 @@ interface GameDao {
 
     @Query("DELETE FROM games")
     suspend fun deleteAll()
+    
+    @Query("DELETE FROM games WHERE sync_status = 'ERROR'")
+    suspend fun deleteErrorGames()
 }

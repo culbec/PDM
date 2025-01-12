@@ -11,7 +11,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import ubb.pdm.gamestop.App
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.domain.data.game.Game
 import ubb.pdm.gamestop.domain.data.game.GameRepository
 
@@ -28,7 +28,6 @@ class GamesViewModel(
 
     init {
         Log.d(TAG, "init")
-        this.loadGames()
     }
 
     private fun loadGames() {

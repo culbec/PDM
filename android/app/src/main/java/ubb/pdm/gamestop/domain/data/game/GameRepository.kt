@@ -1,19 +1,14 @@
 package ubb.pdm.gamestop.domain.data.game
 
 import android.util.Log
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import ubb.pdm.gamestop.core.TAG
+import ubb.pdm.gamestop.core.util.TAG
 import ubb.pdm.gamestop.core.data.remote.Api
 import ubb.pdm.gamestop.domain.data.game.local.GameDao
-import ubb.pdm.gamestop.domain.data.game.remote.GameEvent
 import ubb.pdm.gamestop.domain.data.game.remote.GameService
-import ubb.pdm.gamestop.domain.data.game.remote.GameWsClient
 
 class GameRepository(
     private val gameService: GameService,
     private val gameDao: GameDao,
-    private val gameWsClient: GameWsClient
 ) {
     // accessing the games through the data access object
     val gameStream by lazy { gameDao.getAll() }
@@ -22,18 +17,14 @@ class GameRepository(
         Log.d(TAG, "init")
     }
 
-    // refreshes teh local data source with the remote one
+    // refreshes the local data source with the remote one
     suspend fun refresh() {
         Log.d(TAG, "refresh started")
 
         try {
             val games = gameService.findAll(authorization = Api.getBearerToken())
-            gameDao.deleteAll()
-
-            games.forEach {
-                Log.d(TAG, "refresh game: $it")
-                gameDao.insert(it)
-            }
+            gameDao.insert(games)
+            
             Log.d(TAG, "refresh succeeded")
         } catch (e: Exception) {
             Log.w(TAG, "refresh failed", e)
@@ -46,35 +37,15 @@ class GameRepository(
         }
     }
 
-    fun getGameEvents(): Flow<Result<GameEvent>> = callbackFlow {
-        Log.d(TAG, "getGameEvents started")
-
-        gameWsClient.openSocket(
-            onEvent = {
-                Log.d(TAG, "onEvent: $it")
-                if (it != null) {
-                    trySend(Result.success(it))
-                }
-            },
-            onClosed = {
-                Log.d(TAG, "onClosed")
-                close()
-            },
-            onFailure = {
-                Log.d(TAG, "onFailure")
-                close()
-            }
-        )
-    }
-
-    fun setToken(userId: String, token: String) {
-        Log.d(TAG, "setToken: $token")
-        gameWsClient.authorize(userId, token)
-    }
-
     private suspend fun handleGameCreated(game: Game) {
         Log.d(TAG, "handleGameCreated: $game")
-        gameDao.insert(game)
+        gameDao.insert(
+            game.copy(
+                syncOperation = SyncOperation.NONE,
+                syncStatus = SyncStatus.SYNCED,
+                lastSync = System.currentTimeMillis()
+            )
+        )
     }
 
     suspend fun save(game: Game): Game {
@@ -98,7 +69,13 @@ class GameRepository(
 
     private suspend fun handleGameUpdated(game: Game) {
         Log.d(TAG, "handleGameUpdated: $game")
-        gameDao.update(game)
+        gameDao.update(
+            game.copy(
+                syncOperation = SyncOperation.NONE,
+                syncStatus = SyncStatus.SYNCED,
+                lastSync = System.currentTimeMillis()
+            )
+        )
     }
 
     suspend fun update(game: Game): Game {
@@ -109,5 +86,31 @@ class GameRepository(
         Log.d(TAG, "update updatedGame: $updatedGame")
         handleGameUpdated(updatedGame)
         return updatedGame
+    }
+    
+    suspend fun insertPending(game: Game) {
+        Log.d(TAG, "insertPending: $game")
+        gameDao.insert(
+            game.copy(
+                syncStatus = SyncStatus.PENDING
+            )
+        )
+    }
+    
+    suspend fun updateSyncStatus(game: Game, syncStatus: SyncStatus) {
+        Log.d(TAG, "updateSyncStatus: $game, $syncStatus")
+        gameDao.update(game.copy(syncStatus = syncStatus))
+    }
+    
+    suspend fun deleteErrorGames() {
+        Log.d(TAG, "deleteErrorGames")
+        gameDao.deleteErrorGames()
+    }
+    
+   fun getPendingGames(): List<Game> {
+        Log.d(TAG, "getPendingGames")
+        val pendingGames = gameDao.getPending()
+        Log.d(TAG, "getPendingGames: $pendingGames")
+        return pendingGames
     }
 }
